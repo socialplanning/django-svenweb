@@ -103,6 +103,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'djangohelpers.middleware.AuthRequirementMiddleware',
     'svenweb.sites.middleware.SiteContextMiddleware',
+    'svenweb.sites.middleware.SvenwebSecurityMiddleware',
 )
 
 OPENCORE_ROOT_URL = "http://localhost:10001/openplans/"
@@ -162,3 +163,28 @@ LOGGING = {
 
 ANONYMOUS_PATHS = ['/accounts']
 SVENWEB_REPO_PATH = here + '/repos'
+
+_ROLE_RANKING = [
+    "WikiManager",
+    "Authenticated",
+    "Anonymous",
+    ]
+
+PERMISSION_CONSTRAINTS = {
+    'default': {
+        "Anonymous": ["WIKI_VIEW", "WIKI_HISTORY"],
+        "Authenticated": ["WIKI_VIEW", "WIKI_HISTORY",
+                          "WIKI_EDIT", "WIKI_DEPLOY"],
+        "WikiManager": ["WIKI_VIEW", "WIKI_HISTORY",
+                        "WIKI_EDIT", "WIKI_DEPLOY",
+                        "WIKI_CONFIGURE"],
+        },
+    }
+
+def SVENWEB_HIGHEST_ROLE_FINDER(roles):
+    for role in _ROLE_RANKING:
+        if role in roles:
+            return role
+
+def SVENWEB_PERMISSION_CONSTRAINT_GETTER(request, role):
+    return PERMISSION_CONSTRAINTS['default'][role]
