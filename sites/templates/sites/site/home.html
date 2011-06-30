@@ -21,10 +21,10 @@
 
 <ul>
   {% if "WIKI_CONFIGURE" in permissions %}
-  <li><a href="/.home/configure/">Configure wiki</a></li>
+  <li><a href="{{site.wiki_configure_url}}">Configure wiki</a></li>
   {% endif %}
   {% if "WIKI_DEPLOY" in permissions %}
-  <li><a href="/.deploy/">Configure deployment</a></li>
+  <li><a href="{{site.deploy_dashboard_url}}">Configure deployment</a></li>
   {% endif %}
 </ul>
 {% endwith %}
