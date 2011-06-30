@@ -235,9 +235,9 @@ class Wiki(models.Model):
         contents = repo.log(path)
         for obj in contents:
             timestamp = obj['fields']['timestamp']
-            from wsgiref.handlers import format_date_time
+            import datetime
             obj['fields']['timestamp'] = \
-                format_date_time(timestamp)
+                datetime.datetime.fromtimestamp((timestamp)
         return contents
 
 from django.conf import settings
