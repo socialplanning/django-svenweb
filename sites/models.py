@@ -237,7 +237,7 @@ class Wiki(models.Model):
             timestamp = obj['fields']['timestamp']
             import datetime
             obj['fields']['timestamp'] = \
-                datetime.datetime.fromtimestamp((timestamp)
+                datetime.datetime.fromtimestamp(timestamp)
         return contents
 
 from django.conf import settings
