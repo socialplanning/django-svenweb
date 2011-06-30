@@ -41,3 +41,7 @@ def latest_change(wiki, path):
         return wiki.latest_change(path)
     except IndexError:
         return None
+
+@register.filter
+def deslug(path):
+    return path.replace("-", " ").title()
