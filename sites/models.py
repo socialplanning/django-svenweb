@@ -26,7 +26,7 @@ NoDefault = _NoDefault()
 del _NoDefault
 
 class Wiki(models.Model):
-    name = models.TextField()
+    name = models.TextField(unique=True)
     config = models.TextField()
 
     def __unicode__(self):
@@ -72,7 +72,7 @@ class Wiki(models.Model):
             raise TypeError("Cannot convert to bool: %s" % value)
 
     def wiki_type(self):
-        return self.get_option("wiki_type", "raw")
+        return self.get_option("wiki_type", "managedhtml")
 
     def custom_domain(self):
         return self.get_option("custom_domain", "")
@@ -96,17 +96,16 @@ class Wiki(models.Model):
     def add_admin_user(self, user_or_username):
         """
         Normally you will pass a `auth.User` instance to this method,
-        but you can also pass a username string directly, for example
-        if you want to set permissions based on authentication you can
-        pass the string `"__ANONYMOUS__"` or `"__AUTHENTICATED__"`
+        but you can also pass a username string directly.`
         """
         if isinstance(user_or_username, basestring):
             username = user_or_username
         else:
             username = user_or_username.username
-        permissions, _ = UserWikiPermissions.objects.get_or_create(
-            wiki=self, username=username)
-        permissions.add_all_permissions()
+        local_roles, _ = UserWikiLocalRoles.objects.get_or_create(
+            username=username, wiki=self)
+        local_roles.add_role("WikiManager")
+        local_roles.save()
 
     def switch_context(self):
         return "?%s=%s" % (SET_KEY, self.pk)
@@ -168,6 +167,14 @@ class Wiki(models.Model):
     @permalink
     def wiki_configure_url(self):
         return ('site_configure', [])
+
+    @permalink
+    def xinha_linker_url(self):
+        return ('xinha_linker', [])
+
+    @permalink
+    def xinha_image_manager_url(self):
+        return ('xinha_image_manager', [])
 
     @property
     def repo_path(self):
