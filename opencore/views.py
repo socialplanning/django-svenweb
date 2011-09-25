@@ -105,4 +105,25 @@ def create_wiki(request):
     p.set_permissions(other_permissions)
     p.save()
 
+    if request.FILES.get("opencore_export"):
+        import_wiki(site, request.FILES['opencore_export'])
+
     return redirect(site.site_home_url())
+
+import os
+import tempfile
+import shutil
+from zipfile import ZipFile
+def import_wiki(site, zipfile):
+    zipfile = ZipFile(zipfile)
+    prefix = zipfile.infolist()[0].filename.split("/")[0]
+    assert zipfile.getinfo(prefix + "/README.txt")
+    assert zipfile.getinfo(prefix + "/wiki_history/.bzr/README")
+
+    tmpdir = tempfile.mkdtemp()
+    try:
+        zipfile.extractall(path=tmpdir)
+        shutil.move("/%s/%s/wiki_history" % (tmpdir, prefix), site.repo_path)
+    finally:
+        shutil.rmtree(tmpdir)
+    site.set_options({"home_page": "project-home"})
