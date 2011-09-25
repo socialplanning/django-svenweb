@@ -7,7 +7,7 @@ from svenweb.sites.models import (Wiki,
 def requires_project_admin(func):
     def inner(request, *args, **kw):
         role = request.get_project_role()
-        if role != "ProjectAdmin":
+        if "ProjectAdmin" not in role:
             return HttpResponseForbidden()
         return func(request, *args, **kw)
     return inner
@@ -72,7 +72,8 @@ def create_wiki(request):
     member_permissions = int(request.POST.get("member_perms", "-1"))
     other_permissions = int(request.POST.get("other_perms", "-1"))
 
-    from svenweb.sites.models import (get_permission_constraints, PERMISSIONS,
+    from svenweb.opencore.security import get_permission_constraints
+    from svenweb.sites.models import (PERMISSIONS,
                                       WikiRolePermissions)
 
     member_permissions = PERMISSIONS[:member_permissions + 1]
@@ -80,12 +81,12 @@ def create_wiki(request):
 
     member_permissions = [i[0] for i in member_permissions 
                           if i[0] in get_permission_constraints(
-            request.get_security_policy(),
+            request,
             "ProjectMember")]
 
     other_permissions = [i[0] for i in other_permissions 
                           if i[0] in get_permission_constraints(
-            request.get_security_policy(),
+            request,
             "Authenticated")]
 
     p = WikiRolePermissions(wiki=site, role="ProjectMember")
@@ -98,7 +99,7 @@ def create_wiki(request):
 
     other_permissions = [i for i in other_permissions 
                           if i in get_permission_constraints(
-            request.get_security_policy(),
+            request,
             "Anonymous")]
     p = WikiRolePermissions(wiki=site, role="Anonymous")
     p.set_permissions(other_permissions)
