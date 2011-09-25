@@ -87,6 +87,9 @@ class Wiki(models.Model):
     def custom_domain(self):
         return self.get_option("custom_domain", "")
 
+    def home_page(self):
+        return self.get_option("home_page", "")
+
     @property
     def github(self):
         return GithubSite(self)
