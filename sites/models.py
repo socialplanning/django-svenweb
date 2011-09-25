@@ -287,7 +287,7 @@ Back to (({{created_from.title}}))
                 if content_href is not None:
                     href += "?created_from=%s" % content_href
                 return '<a class="wickedadd" href="%s">%s +</a>' % (href, link_text)
-        return re.sub(wiki_link_text, treat_link_text, content)        
+        return re.sub(wiki_link_text, treat_link_text, content.decode("utf8"))
 
 from django.conf import settings
 
