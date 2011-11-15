@@ -333,10 +333,9 @@ def page_index(request, subpath):
     if request.method == "POST":
         return _page_set_property(request, subpath)
 
-    is_raw_path = subpath in site.get_raw_paths()
-
     # @@todo: maybe check for user-supplied index page?
-    return dict(site=site, path=subpath, subpaths=subpaths, is_raw_path=is_raw_path)
+    return dict(site=site, path=subpath, subpaths=subpaths, 
+                is_raw_path=site.is_raw_path(subpath))
 
 @requires("WIKI_CONFIGURE")
 @allow_http("POST")
@@ -361,6 +360,9 @@ def page_view(request, subpath):
 
     # @@todo: raw view? binary files?
     mimetype = mimetypes.guess_type(subpath)[0]
+    if site.is_raw_path(subpath):
+        return HttpResponse(contents, mimetype=mimetype)
+
     return dict(site=site, contents=contents, mimetype=mimetype, path=subpath)
 
 from lxml.html.diff import htmldiff
