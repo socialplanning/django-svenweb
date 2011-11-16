@@ -358,10 +358,11 @@ def page_view(request, subpath):
     except sven.NoSuchResource:
         return redirect(site.page_edit_url(subpath))
 
-    # @@todo: raw view? binary files?
     mimetype = mimetypes.guess_type(subpath)[0]
     if site.is_raw_path(subpath):
         return HttpResponse(contents, mimetype=mimetype)
+
+    contents = site.baked_content(contents, content_href=subpath)
 
     return dict(site=site, contents=contents, mimetype=mimetype, path=subpath)
 
