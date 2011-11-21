@@ -188,3 +188,8 @@ def SVENWEB_HIGHEST_ROLE_FINDER(roles):
 
 def SVENWEB_PERMISSION_CONSTRAINT_GETTER(request, role):
     return PERMISSION_CONSTRAINTS['default'][role]
+
+try:
+    from local_settings import *
+except ImportError:
+    pass
