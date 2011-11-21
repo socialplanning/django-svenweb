@@ -14,6 +14,15 @@ SESSION_KEY = 'svenweb.sites.site'
 UNSET_KEY = 'svenweb.unset_site'
 SET_KEY = 'svenweb.set_site'
 
+import re
+wiki_link_text = re.compile(r"""                                                                                                                                                               
+        (\(\(   )   # The opening (( of the Wicked link "(?<=" prevents the prefix from returning with the match                                                                          
+        [^)]*            # The initial text (no closing parentheses) of the wicked link                                                                                                        
+        ( \) [^)]+ )*    # Any amount of single closing parentheses with trailing text.                                                                                                        
+                         # If there is no trailing text, this is not a single parentheses                                                                                                      
+        (\)\))         # The closing )) of the Wicked link, "?=" prevents the suffix from returning with the match                                                                           
+    """, re.VERBOSE)
+
 def _create_repo(path):
     cmd = ["bzr", "init", "--create-prefix", path]
     result = subprocess.call(cmd)
@@ -263,6 +272,42 @@ class Wiki(models.Model):
             obj['fields']['timestamp'] = \
                 datetime.datetime.fromtimestamp(timestamp)
         return contents
+
+    def new_page_template(self, ctx={}):
+        """
+        Render a template for the default new page content in the editor
+        """
+        from django.template import Template, Context
+        
+        t = Template("""
+{% if created_from %}
+<p>
+Back to (({{created_from.title}}))
+</p>
+{% endif %}
+""")
+        ctx = Context(ctx)
+        return t.render(ctx)
+
+    def baked_content(self, content, content_href=None):
+        """
+        Applies any transformations to the given page content
+        """
+        def treat_link_text(match):
+            link_text = match.group()[2:-2]
+            from django.template.defaultfilters import slugify
+            href = slugify(link_text)
+            try:
+                exists = self.latest_change(href) is not None
+            except:
+                exists = False
+            if exists:
+                return '<a class="wicked_resolved" href="%s">%s</a>' % (href, link_text)
+            else:
+                if content_href is not None:
+                    href += "?created_from=%s" % content_href
+                return '<a class="wickedadd" href="%s">%s +</a>' % (href, link_text)
+        return re.sub(wiki_link_text, treat_link_text, content)        
 
 from django.conf import settings
 
