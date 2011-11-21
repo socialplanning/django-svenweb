@@ -113,6 +113,9 @@ class Wiki(models.Model):
     def custom_domain(self):
         return self.get_option("custom_domain", "")
 
+    def deploy_path(self):
+        return self.get_option("deploy_path", "")
+
     @property
     def github(self):
         return GithubSite(self)
