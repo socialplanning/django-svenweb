@@ -7,6 +7,7 @@ import subprocess
 from sven.bzr import BzrAccess
 from svenweb.sites.github import GithubSite
 from svenweb.sites.compiler import WikiCompiler
+from svenweb.sites.theming import Themer
 from StringIO import StringIO
 from svenweb.sites.utils import permalink
 
@@ -119,6 +120,10 @@ class Wiki(models.Model):
     @property
     def github(self):
         return GithubSite(self)
+
+    @property
+    def themer(self):
+        return Themer(self)
 
     @property
     def compiler(self):
@@ -380,7 +385,15 @@ Host github-%(user)s
 
         config = self._ssh_config_template % locals()
 
-        file = open(os.path.join(basedir, 'config'))
+        try:
+            file = open(os.path.join(basedir, 'config'))
+        except IOError, e:
+            if e.errno == 2:  # file does not exist
+                file = open(os.path.join(basedir, 'config'), 'w')
+                file.close()
+                file = open(os.path.join(basedir, 'config'))
+            else:
+                raise
         config_contents = file.read()
         file.close()
 
