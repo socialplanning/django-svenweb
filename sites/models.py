@@ -2,6 +2,8 @@ from ConfigParser import RawConfigParser, NoOptionError, NoSectionError
 from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
+from django.template import Context
+from django.template.loader import get_template
 import os
 import subprocess
 from sven import exc as sven
@@ -129,6 +131,12 @@ class Wiki(models.Model):
 
     def deploy_path(self):
         return self.get_option("deploy_path", "")
+
+    def render_rss(self):
+        tmpl = get_template("sites/site/page-history.rss.xml")
+        history = self.get_history("/")
+        ctx = dict(site=self, history=history, path="/")
+        return tmpl.render(Context(ctx))
 
     @property
     def github(self):

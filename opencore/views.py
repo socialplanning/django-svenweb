@@ -1,6 +1,7 @@
 from django.http import (HttpResponse, HttpResponseForbidden, 
                          HttpResponseRedirect as redirect)
 from djangohelpers.lib import rendered_with, allow_http
+import feedparser
 from svenweb.sites.models import (Wiki,
                                   UserWikiLocalRoles)
 
@@ -11,6 +12,29 @@ def requires_project_admin(func):
             return HttpResponseForbidden()
         return func(request, *args, **kw)
     return inner
+
+@allow_http("GET")
+def aggregate_feed(request):
+    project = request.META['HTTP_X_OPENPLANS_PROJECT']
+    wikis = []
+    for wiki in Wiki.objects.filter(name__startswith=project+'/'):
+        perms = wiki.get_permissions(request)
+        if "WIKI_VIEW" in perms and "WIKI_HISTORY" in perms:
+            wikis.append(wiki)
+    rss = []
+    for wiki in wikis:
+        try:
+            _rss = wiki.render_rss()
+        except IndexError:
+            continue
+        rss.append(_rss)
+    
+    #decorated = [(entry['feed']["date_parsed"], entry) for entry in rss]
+    #decorated.sort()
+    #decorated.reverse()
+    #sorted = [entry for (date,entry) in decorated]
+
+    return HttpResponse(rss[-1], content_type="application/rss+xml")
 
 @allow_http("GET", "POST")
 @rendered_with("opencore/index.html")
