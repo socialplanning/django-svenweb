@@ -1,0 +1,22 @@
+{% load repo %}
+<?xml version="1.0" encoding="utf-8" ?>
+<rss xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0">
+  <channel>
+    <title>{{ site }}: {{ path }}</title>
+    <link>{{ site.site_home_url }}</link>
+    <language>en-us</language>
+    {% for item in history %}
+    {% if forloop.first %}
+    <pubDate>{{ item.fields.timestamp|date:"Y-m-d H:t:s" }}</pubDate>
+    {% endif %}
+    {% with item.href as href %}
+    <item>
+      <title>{{href}}</title>
+      <link>{{site|page_view_url:href}}</link>
+      <description></description>
+      <pubDate>{{ item.fields.timestamp|date:"Y-m-d H:t:s" }}</pubDate>
+    </item>
+    {% endwith %}
+    {% endfor %}
+  </channel>
+</rss>

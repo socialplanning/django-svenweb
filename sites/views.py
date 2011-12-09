@@ -327,6 +327,19 @@ def page_history(request, subpath):
 
 @requires("WIKI_HISTORY")
 @allow_http("GET")
+@rendered_with("sites/site/page-history.rss.xml", mimetype="application/rss+xml")
+def page_history_rss(request, subpath):
+    site = request.site
+
+    try:
+        history = site.get_history(subpath)
+    except sven.NoSuchResource:
+        return redirect(site.page_edit_url(subpath))
+        
+    return dict(site=site, history=history, path=subpath)
+
+@requires("WIKI_HISTORY")
+@allow_http("GET")
 @rendered_with("sites/site/page-history-version.html")
 def page_history_version(request, subpath):
     site = request.site

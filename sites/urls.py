@@ -19,6 +19,7 @@ urlpatterns = patterns(
 
     url(r'^.index/(?P<subpath>.*)/*$', 'svenweb.sites.views.page_index', name='page_index'),
     url(r'^.history/(?P<subpath>.*)/*$', 'svenweb.sites.views.page_history', name='page_history'),
+    url(r'^.history_rss/(?P<subpath>.*)/*$', 'svenweb.sites.views.page_history_rss', name='page_history_rss'),
     url(r'^.version/(?P<subpath>.*)/*$', 'svenweb.sites.views.page_history_version', name='page_history_version'),
     url(r'^.latest_change/(?P<subpath>.*)/*$', 'svenweb.sites.views.latest_change', name='latest_change'),
 
