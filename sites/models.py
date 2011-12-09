@@ -8,6 +8,7 @@ from sven import exc as sven
 from sven.bzr import BzrAccess
 from svenweb.sites.github import GithubSite
 from svenweb.sites.compiler import WikiCompiler
+from svenweb.sites.theming import Themer
 from StringIO import StringIO
 from svenweb.sites.utils import permalink
 
@@ -23,6 +24,13 @@ wiki_link_text = re.compile(r"""
                          # If there is no trailing text, this is not a single parentheses                                                                                                      
         (\)\))         # The closing )) of the Wicked link, "?=" prevents the suffix from returning with the match                                                                           
     """, re.VERBOSE)
+
+def canonical_path(path):
+    path = path.strip("/")
+    path = "/" + path
+    if not path.endswith("/"):
+        path = path + "/"
+    return path
 
 def _create_repo(path):
     cmd = ["bzr", "init", "--create-prefix", path]
@@ -42,15 +50,18 @@ class Wiki(models.Model):
     def __unicode__(self):
         return self.name
 
-    def set_options(self, kwargs):
+    def set_options(self, kwargs, section="options"):
         if not self.config:
-            self.config = "[options]"
+            self.config = "[%s]" % section
         config = RawConfigParser()
         fp = StringIO(self.config)
         config.readfp(fp)
 
+        if not config.has_section(section):
+            config.add_section(section)
+
         for key, val in kwargs.items():
-            config.set("options", key, val)
+            config.set(section, key, val)
 
         fp = StringIO()
         config.write(fp)
@@ -58,13 +69,13 @@ class Wiki(models.Model):
         self.config = fp.read()
         self.save()
 
-    def get_option(self, key, default=NoDefault, asbool=False):
+    def get_option(self, key, default=NoDefault, asbool=False, section="options"):
         config = RawConfigParser()
         fp = StringIO(self.config)
 
         config.readfp(fp)
         try:
-            value = config.get("options", key)
+            value = config.get(section, key)
         except (NoOptionError, NoSectionError):
             if default is NoDefault:
                 raise
@@ -81,6 +92,32 @@ class Wiki(models.Model):
         else:
             raise TypeError("Cannot convert to bool: %s" % value)
 
+    def add_raw_path(self, path):
+        self.set_options({path: "raw"}, section="path_properties")
+
+    def get_raw_paths(self):
+        config = RawConfigParser()
+        fp = StringIO(self.config)
+
+        config.readfp(fp)
+        try:
+            value = config.options("path_properties")
+        except (NoOptionError, NoSectionError):
+            return []
+        paths = []
+        for option in value:
+            if config.get("path_properties", option) == "raw":
+                paths.append(option)
+        return paths
+
+    def is_raw_path(self, subpath):
+        for path in self.get_raw_paths():
+            if subpath.startswith(path):
+                return True
+            if canonical_path(subpath).startswith(canonical_path(path)):
+                return True
+        return False
+
     def wiki_type(self):
         return self.get_option("wiki_type", "managedhtml")
 
@@ -90,9 +127,16 @@ class Wiki(models.Model):
     def home_page(self):
         return self.get_option("home_page", "")
 
+    def deploy_path(self):
+        return self.get_option("deploy_path", "")
+
     @property
     def github(self):
         return GithubSite(self)
+
+    @property
+    def themer(self):
+        return Themer(self)
 
     @property
     def compiler(self):
@@ -293,6 +337,7 @@ from django.conf import settings
 
 class UserProfile(models.Model):
     user = models.ForeignKey(User)
+    config = models.TextField()
 
     @property
     def github_username(self):
@@ -353,7 +398,15 @@ Host github-%(user)s
 
         config = self._ssh_config_template % locals()
 
-        file = open(os.path.join(basedir, 'config'))
+        try:
+            file = open(os.path.join(basedir, 'config'))
+        except IOError, e:
+            if e.errno == 2:  # file does not exist
+                file = open(os.path.join(basedir, 'config'), 'w')
+                file.close()
+                file = open(os.path.join(basedir, 'config'))
+            else:
+                raise
         config_contents = file.read()
         file.close()
 

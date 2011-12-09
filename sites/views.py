@@ -42,6 +42,20 @@ def oauth(request):
         return redirect("/")
 
 @allow_http("GET", "POST")
+@rendered_with("sites/site/theme.html")
+def theme(request):
+    site = request.site
+
+    if request.method == "GET":
+        return {'path': '/', 'site': site}
+
+    theme_url = request.POST['theme_url']
+    theme_name = request.POST['theme_name']
+    site.themer.fetch_theme(theme_url, theme_name)
+    site.set_options(dict(theme_name=theme_name))
+    return redirect(".")
+
+@allow_http("GET", "POST")
 @rendered_with("sites/user_index.html")
 def home(request):
     if request.method == "GET":
@@ -132,6 +146,8 @@ def user_account(request):
         'profile': profile,
         'message': message,
         'redirect_to': redirect_to,
+        'path': '/',
+        'site': request.site,
         }
 
 @requires("WIKI_CONFIGURE")
@@ -143,11 +159,12 @@ def deploy(request):
     if request.method == "POST":
         options = {'custom_domain': request.POST.get("custom_domain", ''),
                    'github_repo': request.POST.get("github_repo", ''),
+                   'deploy_path': request.POST.get("deploy_path", ''),
                    }
         site.set_options(options)
         return redirect(".")
 
-    return dict(site=site)
+    return dict(site=site, path='/')
 
 @allow_http("POST")
 def create_github_repo(request):
@@ -240,6 +257,22 @@ def deploy_to_github(request):
     import glob
     curdir = os.getcwd()
 
+    try:
+        _deploy_to_github(request)
+    finally:
+        os.chdir(curdir)
+
+    return redirect(site.deploy_dashboard_url())
+
+
+def _deploy_to_github(request):
+    site = request.site
+
+    import subprocess
+    import os
+    import tempfile
+    import shutil
+    import glob
     checkout_path = tempfile.mkdtemp()
     os.chdir(checkout_path)
 
@@ -277,11 +310,7 @@ def deploy_to_github(request):
     subprocess.call(["git", "commit", 
                      "-m", "pushing to github"])
     subprocess.call(["git", "push"])
-
-    os.chdir(curdir)
     shutil.rmtree(checkout_path)
-
-    return redirect(site.deploy_dashboard_url())
 
 @requires("WIKI_HISTORY")
 @allow_http("GET")
@@ -324,7 +353,7 @@ def page_history_version(request, subpath):
 
 
 @requires("WIKI_VIEW")
-@allow_http("GET")
+@allow_http("GET", "POST")
 @rendered_with("sites/site/page-index.html")
 def page_index(request, subpath):
     site = request.site
@@ -336,8 +365,20 @@ def page_index(request, subpath):
     except sven.NoSuchResource:
         return redirect(site.page_edit_url(subpath))
 
+    if request.method == "POST":
+        return _page_set_property(request, subpath)
+
     # @@todo: maybe check for user-supplied index page?
-    return dict(site=site, path=subpath, subpaths=subpaths)
+    return dict(site=site, path=subpath, subpaths=subpaths, 
+                is_raw_path=site.is_raw_path(subpath))
+
+@requires("WIKI_CONFIGURE")
+@allow_http("POST")
+def _page_set_property(request, subpath):
+    site = request.site
+    if "raw_path" in request.POST:
+        site.add_raw_path(subpath)
+    return redirect(".")
 
 @requires("WIKI_VIEW")
 @allow_http("GET")
@@ -356,8 +397,12 @@ def page_view(request, subpath):
             url += "?%s" % urllib.urlencode(request.GET.items())
         return redirect(url)
 
-    contents = site.baked_content(contents, content_href=subpath)
     mimetype = mimetypes.guess_type(subpath)[0]
+    if site.is_raw_path(subpath):
+        return HttpResponse(contents, mimetype=mimetype)
+
+    contents = site.baked_content(contents, content_href=subpath)
+
     return dict(site=site, contents=contents, mimetype=mimetype, path=subpath)
 
 from lxml.html.diff import htmldiff
@@ -493,6 +538,9 @@ def page_edit(request, subpath):
 
         msg = request.POST.get("comment") or None
 
+        if isinstance(contents, unicode):
+            contents = contents.encode("utf8")
+                
         site.write_page(subpath, contents, 
                         msg=msg,
                         username=request.user.username)
