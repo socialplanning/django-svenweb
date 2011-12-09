@@ -13,6 +13,8 @@ def requires_project_admin(func):
         return func(request, *args, **kw)
     return inner
 
+@rendered_with("opencore/project_feed.rss.xml", 
+               mimetype="application/rss+xml")
 @allow_http("GET")
 def aggregate_feed(request):
     project = request.META['HTTP_X_OPENPLANS_PROJECT']
@@ -21,20 +23,28 @@ def aggregate_feed(request):
         perms = wiki.get_permissions(request)
         if "WIKI_VIEW" in perms and "WIKI_HISTORY" in perms:
             wikis.append(wiki)
-    rss = []
+    rss = {}
     for wiki in wikis:
         try:
             _rss = wiki.render_rss()
         except IndexError:
             continue
-        rss.append(_rss)
+        rss[wiki.name] = feedparser.parse(_rss)
     
-    #decorated = [(entry['feed']["date_parsed"], entry) for entry in rss]
-    #decorated.sort()
-    #decorated.reverse()
-    #sorted = [entry for (date,entry) in decorated]
-
-    return HttpResponse(rss[-1], content_type="application/rss+xml")
+    entries = []
+    while len(entries) < 5:
+        candidates = []
+        for wiki, feed in rss.items():
+            _entries = feed['entries']
+            if not len(_entries):
+                continue
+            candidates.append( (_entries[0]['date_parsed'], _entries[0], wiki) )
+        if not len(candidates):
+            break
+        winner, entry, wiki = sorted(candidates, reverse=True)[0]
+        rss[wiki].entries.pop(0)
+        entries.append(entry)
+    return locals()
 
 @allow_http("GET", "POST")
 @rendered_with("opencore/index.html")
