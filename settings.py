@@ -1,6 +1,6 @@
 # Django settings for svenweb project.
 
-DEBUG = False
+DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
@@ -24,7 +24,7 @@ SVENWEB_EXTRA_ROLE_GETTER = lambda req, wiki: req.get_project_role()
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+        'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
         'NAME': 'svenweb',              # Or path to database file if using sqlite3.
         'USER': '',                      # Not used with sqlite3.
         'PASSWORD': '',                  # Not used with sqlite3.
@@ -115,9 +115,9 @@ MIDDLEWARE_CLASSES = (
     'svenweb.sites.middleware.SvenwebSecurityMiddleware',
     'svenweb.opencore.middleware.SiteContextMiddleware',
 )
-OPENCORE_SHARED_SECRET_FILE = '/srv/wiki.coactivate.socialplanning.org/var/secret.txt'
-OPENCORE_ADMIN_FILE = '/srv/wiki.coactivate.socialplanning.org/var/admin.txt'
-OPENCORE_SERVER = 'http://coactivate.org'
+OPENCORE_SHARED_SECRET_FILE = '../../../../../var/secret.txt'
+OPENCORE_ADMIN_FILE = '../../../../../var/admin.txt'
+OPENCORE_SERVER = 'http://localhost:10000'
 
 AUTHENTICATION_BACKENDS = ()
 
@@ -173,4 +173,4 @@ LOGGING = {
     }
 }
 
-SVENWEB_REPO_PATH = '/srv/wiki.socialplanning.org/var/repos'
+SVENWEB_REPO_PATH = 'repos'
