@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.http import (HttpResponse, HttpResponseForbidden, 
                          HttpResponseRedirect as redirect)
 from djangohelpers.lib import rendered_with, allow_http
@@ -44,6 +45,8 @@ def aggregate_feed(request):
         winner, entry, wiki = sorted(candidates, reverse=True)[0]
         rss[wiki].entries.pop(0)
         entries.append(entry)
+
+    SITE_DOMAIN = settings.SITE_DOMAIN
     return locals()
 
 @allow_http("GET", "POST")

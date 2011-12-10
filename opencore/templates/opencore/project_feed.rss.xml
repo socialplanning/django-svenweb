@@ -2,7 +2,7 @@
 <rss xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0">
   <channel>
     <title>Wiki Updates</title>
-    <link>http://localhost:4040/</link>
+    <link>{{ SITE_DOMAIN }}</link>
     <language>en-us</language>
     {% for item in entries %}
     {% if forloop.first %}
@@ -10,7 +10,7 @@
     {% endif %}
     <item>
       <title>{{item.title}}</title>
-      <link>{{item.links.0.href}}</link>
+      <link>{{ SITE_DOMAIN }}{{item.links.0.href}}</link>
       <description></description>
       <pubDate>{{ item.updated }}</pubDate>
       <author>{{ item.author }}</author>
