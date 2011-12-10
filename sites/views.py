@@ -80,6 +80,8 @@ def home(request):
 def site_home(request):
     site = request.site
 
+    return redirect(site.page_view_url(site.home_page()))
+
     return redirect(site.directory_index_url())
 
     from svenweb.opencore.middleware import get_role, get_security_policy, get_permissions
@@ -93,9 +95,8 @@ def site_home(request):
 def site_configure(request):
     site = request.site
     if request.method == "GET":
-        return dict(site=site, path='/')
-    wiki_type = request.POST['wiki_type']
-    site.set_options({'wiki_type': wiki_type})
+        return dict(site=site, path="/")
+    site.set_options(request.POST)
     return redirect(site.site_home_url())
 
 @allow_http("GET", "POST")
@@ -315,6 +316,19 @@ def _deploy_to_github(request):
 @allow_http("GET")
 @rendered_with("sites/site/page-history.html")
 def page_history(request, subpath):
+    site = request.site
+
+    try:
+        history = site.get_history(subpath)
+    except sven.NoSuchResource:
+        return redirect(site.page_edit_url(subpath))
+        
+    return dict(site=site, history=history, path=subpath)
+
+@requires("WIKI_HISTORY")
+@allow_http("GET")
+@rendered_with("sites/site/page-history.rss.xml", mimetype="application/rss+xml")
+def page_history_rss(request, subpath):
     site = request.site
 
     try:

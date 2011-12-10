@@ -2,6 +2,8 @@ from ConfigParser import RawConfigParser, NoOptionError, NoSectionError
 from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
+from django.template import Context
+from django.template.loader import get_template
 import os
 import subprocess
 from sven import exc as sven
@@ -124,8 +126,17 @@ class Wiki(models.Model):
     def custom_domain(self):
         return self.get_option("custom_domain", "")
 
+    def home_page(self):
+        return self.get_option("home_page", "")
+
     def deploy_path(self):
         return self.get_option("deploy_path", "")
+
+    def render_rss(self):
+        tmpl = get_template("sites/site/page-history.rss.xml")
+        history = self.get_history("/")
+        ctx = dict(site=self, history=history, path="/")
+        return tmpl.render(Context(ctx))
 
     @property
     def github(self):
@@ -328,7 +339,7 @@ Back to (({{created_from.title}}))
                 if content_href is not None:
                     href += "?created_from=%s" % content_href
                 return '<a class="wickedadd" href="%s">%s +</a>' % (href, link_text)
-        return re.sub(wiki_link_text, treat_link_text, content)        
+        return re.sub(wiki_link_text, treat_link_text, content.decode("utf8"))
 
 from django.conf import settings
 

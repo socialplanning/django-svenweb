@@ -16,6 +16,9 @@
     <option value="managedhtml" {% if site.wiki_type == "managedhtml" %}selected="selected"{% endif %}>
       Managed HTML</option>
   </select>
+  <p>
+    Home page: <input type="text" name="home_page" value="{{site.home_page}}" />
+  </p>
   <input type="submit" />
 </form>
 

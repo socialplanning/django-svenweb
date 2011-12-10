@@ -25,13 +25,20 @@ No wikis have been created yet.
 {% if "ProjectAdmin" in request.get_project_role %}
 <h2>Create a wiki</h2>
 <div id="oc-tasktracker">
-<form method="POST">
+  <form enctype="multipart/form-data" method="POST">
   {% csrf_token %}
   <p>
     Name: <input type="text" name="name" />
   </p>
 
   {% include "opencore/permissions_form.html" %}
+
+  <p>
+    (Optional) Import an existing opencore wiki? 
+  <input type="file" name="opencore_export"
+	 size="30" />
+  </p>
+  
   <input type="submit" />
 </form>
 </div>
