@@ -10,7 +10,7 @@
     {% endif %}
     {% with item.href as href %}
     <item>
-      <title>{{href}}</title>
+      <title>{{href|deslug}}</title>
       <link>{{ SITE_DOMAIN }}{{site|page_view_url:href}}</link>
       <description></description>
       <pubDate>{{ item.fields.timestamp|date:"Y-m-d H:t:s" }}</pubDate>
