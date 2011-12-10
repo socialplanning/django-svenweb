@@ -12,7 +12,7 @@
     <item>
       <title>{{href|deslug}}</title>
       <link>{{ SITE_DOMAIN }}{{site|page_view_url:href}}</link>
-      <description></description>
+      <description>{{ item.fields.message }}</description>
       <pubDate>{{ item.fields.timestamp|date:"Y-m-d H:t:s" }}</pubDate>
       <author>{{ item.fields.author }}</author>
       <userid>{{ item.fields.author }}</userid>

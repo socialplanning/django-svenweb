@@ -11,7 +11,7 @@
     <item>
       <title>{{item.title}}</title>
       <link>{{ SITE_DOMAIN }}{{item.links.0.href}}</link>
-      <description></description>
+      <description>{{ item.description }}</description>
       <pubDate>{{ item.updated }}</pubDate>
       <author>{{ item.author }}</author>
       <userid>{{ item.author }}</userid>
