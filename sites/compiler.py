@@ -61,7 +61,9 @@ def managed_html_wiki_compiler(export_path, compiler):
             renamed.append((root[len(export_path):] + '/' + file, 
                             root[len(export_path):] + '/' + new_name))
 
-    theme_path = wiki.themer.theme_path() or "b/theme/coactivate"
+    theme_path = wiki.themer.theme_path()
+    if not theme_path:
+        return 
 
     http_host, script_name = compiler.compiled_site_root()
     if theme_path:
@@ -106,7 +108,11 @@ def managed_html_wiki_compiler(export_path, compiler):
                 new = (root[len(export_path):] + '/' + file)
                 url = "%s/%s" % (script_name, new.lstrip("/"))
                 print "Fetching %s" % url
-                resp = app.get(url)
+                try:
+                    resp = app.get(url)
+                except Exception, exc:
+                    print "Could not fetch %s: %s" % (url, exc)
+                    continue
                 fp = open(os.path.join(export_path.rstrip('/'), new.lstrip('/')), 'w')
                 fp.write(resp.body)
                 fp.close()

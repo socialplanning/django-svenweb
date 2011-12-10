@@ -93,7 +93,7 @@ def site_home(request):
 def site_configure(request):
     site = request.site
     if request.method == "GET":
-        return dict(site=site)
+        return dict(site=site, path='/')
     wiki_type = request.POST['wiki_type']
     site.set_options({'wiki_type': wiki_type})
     return redirect(site.site_home_url())
