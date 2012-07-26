@@ -5,6 +5,15 @@
   #oc-content-container {
     min-height: 70em !important;
   }
+  .create-wiki-form {
+    border: 1px solid black;
+    border-radius: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .create-wiki-form h2 {
+    padding-bottom: 15px;
+  }
 </style>
 {% endblock %}
 
@@ -23,6 +32,7 @@ No wikis have been created yet.
 {% endif %}
 
 {% if "ProjectAdmin" in request.get_project_role %}
+<div class="create-wiki-form">
 <h2>Create a wiki</h2>
 <div id="oc-tasktracker">
   <form enctype="multipart/form-data" method="POST">
@@ -41,6 +51,7 @@ No wikis have been created yet.
   
   <input value="Create wiki" type="submit" />
 </form>
+</div>
 </div>
 {% endif %}
 
