@@ -12,6 +12,9 @@ urlpatterns = patterns(
     url(r'^.home/account/$', 'svenweb.sites.views.user_account', 
         name='user_account'),
 
+    url(r'^.home/permissions/$', 'svenweb.opencore.views.configure_wiki_permissions', 
+        name='configure_wiki_permissions'),
+
     url(r'^.deploy/$', 'svenweb.sites.views.deploy', name="site_deploy"),
     url(r'^.deploy/github/init/$', 'svenweb.sites.views.deploy_to_github_initial'),
     url(r'^.deploy/github/create/$', 'svenweb.sites.views.create_github_repo'),

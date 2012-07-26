@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style type="text/css">
+  #oc-content-container {
+    min-height: 70em !important;
+  }
+  .create-wiki-form {
+    border: 1px solid black;
+    border-radius: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .create-wiki-form h2 {
+    padding-bottom: 15px;
+  }
+  .error {
+    font-weight: bold;
+    color: red;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1><a href="{{site.site_home_url}}">Configure Wiki: {{site.name}}</a></h1>
+
+<div class="create-wiki-form">
+<h2>Wiki settings</h2>
+<div id="oc-tasktracker">
+<form method="POST">
+  {% csrf_token %}
+  
+  {% include "opencore/permissions_form.html" %}
+
+  <input type="submit" value="Save settings" />
+</form>
+</div>
+</div>
+{% endblock %}

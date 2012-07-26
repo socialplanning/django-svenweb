@@ -53,20 +53,7 @@ class ValidationError(TypeError):
     def __init__(self, errors):
         self.errors = errors
 
-@allow_http("GET", "POST")
-@rendered_with("opencore/index.html")
-def home(request):
-    errors = {}
-    if request.method == "POST":
-        try:
-            return create_wiki(request)
-        except ValidationError, e:
-            errors = e.errors
-
-    project = request.META['HTTP_X_OPENPLANS_PROJECT']
-    wikis = [i for i in Wiki.objects.filter(name__startswith=project+'/')
-             if i.viewable(request)]
-
+def calculate_available_permissions(request):
     policy = request.get_security_policy()
 
     from svenweb.sites.models import PERMISSIONS
@@ -92,7 +79,25 @@ def home(request):
         if i > 0:
             prefix = "and "
         other_permissions.append((i, prefix + _other_permissions[i][1]))
-    
+
+    return member_permissions, other_permissions
+
+@allow_http("GET", "POST")
+@rendered_with("opencore/index.html")
+def home(request):
+    errors = {}
+    if request.method == "POST":
+        try:
+            return create_wiki(request)
+        except ValidationError, e:
+            errors = e.errors
+
+    project = request.META['HTTP_X_OPENPLANS_PROJECT']
+    wikis = [i for i in Wiki.objects.filter(name__startswith=project+'/')
+             if i.viewable(request)]
+
+    member_permissions, other_permissions = calculate_available_permissions(request)
+
     return {'wikis': wikis, 'project': project,
             'wiki_managers': [request.user.username],
             'member_permissions': member_permissions,
@@ -109,20 +114,14 @@ def wiki_settings(request):
 
 @requires_project_admin
 @allow_http("POST")
-def create_wiki(request):
-    _name = request.POST.get('name') or "default-wiki"
-    from django.template.defaultfilters import slugify
-    name = slugify(_name)
-    name = request.META['HTTP_X_OPENPLANS_PROJECT'] + '/' + name
-    if Wiki.objects.filter(name=name).exists():
-        raise ValidationError({'name': "A wiki named %s already exists, please choose another name" % _name})
-
-    site = Wiki(name=name)
-    site.save()
-
+def modify_wiki_settings(request, site):
     managers = request.POST.getlist("managers")
+    all_roles = UserWikiLocalRoles.objects.filter(wiki=site)
+    for role in all_roles:
+        role.remove_role("WikiManager")
+        role.save()
     for manager in managers:
-        role = UserWikiLocalRoles(username=manager, wiki=site)
+        role, _ = UserWikiLocalRoles.objects.get_or_create(username=manager, wiki=site)
         role.add_role("WikiManager")
         role.save()
 
@@ -146,11 +145,11 @@ def create_wiki(request):
             request,
             "Authenticated")]
 
-    p = WikiRolePermissions(wiki=site, role="ProjectMember")
+    p, _ = WikiRolePermissions.objects.get_or_create(wiki=site, role="ProjectMember")
     p.set_permissions(member_permissions)
     p.save()
 
-    p = WikiRolePermissions(wiki=site, role="Authenticated")
+    p, _ = WikiRolePermissions.objects.get_or_create(wiki=site, role="Authenticated")
     p.set_permissions(other_permissions)
     p.save()
 
@@ -158,9 +157,65 @@ def create_wiki(request):
                           if i in get_permission_constraints(
             request,
             "Anonymous")]
-    p = WikiRolePermissions(wiki=site, role="Anonymous")
+    p, _ = WikiRolePermissions.objects.get_or_create(wiki=site, role="Anonymous")
     p.set_permissions(other_permissions)
     p.save()
+
+    return
+
+@requires_project_admin
+@allow_http("GET", "POST")
+@rendered_with("sites/site/configure_permissions.html")
+def configure_wiki_permissions(request):
+    site = request.site
+
+    if request.method == "POST":
+        modify_wiki_settings(request, site)
+        return redirect(site.site_home_url())
+
+    member_permissions, other_permissions = calculate_available_permissions(request)
+
+    wiki_managers = [u.username for u in 
+                     UserWikiLocalRoles.objects.filter(wiki=site, roles__contains="WikiManager")]
+
+    
+    from svenweb.sites.models import PERMISSIONS as _PERMISSIONS, WikiRolePermissions
+    PERMISSIONS = [i[0] for i in _PERMISSIONS]
+    permissions = WikiRolePermissions.objects.get(wiki=site, role="ProjectMember")
+    if not permissions.get_permissions():
+        chosen_member_permission = -1
+    else:
+        chosen_member_permission = max(PERMISSIONS.index(permission) for permission
+                                       in permissions.get_permissions())
+    permissions = WikiRolePermissions.objects.get(wiki=site, role="Authenticated")
+    if not permissions.get_permissions():
+        chosen_nonmember_permission = -1
+    else:
+        chosen_nonmember_permission = max(PERMISSIONS.index(permission) for permission 
+                                          in permissions.get_permissions())
+
+    return dict(site=site, path='/',
+                member_permissions=member_permissions,
+                other_permissions=other_permissions,
+                wiki_managers=wiki_managers,
+                chosen_member_permission=chosen_member_permission,
+                chosen_nonmember_permission=chosen_nonmember_permission,
+                )
+
+@requires_project_admin
+@allow_http("POST")
+def create_wiki(request):
+    _name = request.POST.get('name') or "default-wiki"
+    from django.template.defaultfilters import slugify
+    name = slugify(_name)
+    name = request.META['HTTP_X_OPENPLANS_PROJECT'] + '/' + name
+    if Wiki.objects.filter(name=name).exists():
+        raise ValidationError({'name': "A wiki named %s already exists, please choose another name" % _name})
+
+    site = Wiki(name=name)
+    site.save()
+
+    modify_wiki_settings(request, site)
 
     if request.FILES.get("opencore_export"):
         import_wiki(site, request.FILES['opencore_export'])

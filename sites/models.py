@@ -190,6 +190,10 @@ class Wiki(models.Model):
         return ('file_upload', [self.raw_files_path.strip('/')])
 
     @permalink
+    def configure_permissions_url(self):
+        return ('configure_wiki_permissions', [])
+
+    @permalink
     def site_home_url(self):
         return ('site_home', [])
 
