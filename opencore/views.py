@@ -49,11 +49,19 @@ def aggregate_feed(request):
     SITE_DOMAIN = settings.SITE_DOMAIN
     return locals()
 
+class ValidationError(TypeError):
+    def __init__(self, errors):
+        self.errors = errors
+
 @allow_http("GET", "POST")
 @rendered_with("opencore/index.html")
 def home(request):
+    errors = {}
     if request.method == "POST":
-        return create_wiki(request)
+        try:
+            return create_wiki(request)
+        except ValidationError, e:
+            errors = e.errors
 
     project = request.META['HTTP_X_OPENPLANS_PROJECT']
     wikis = [i for i in Wiki.objects.filter(name__startswith=project+'/')
@@ -91,6 +99,7 @@ def home(request):
             'other_permissions': other_permissions,
             'chosen_member_permission': member_permissions[-1][0],
             'chosen_nonmember_permission': other_permissions[-1][0],
+            'errors': errors,
             }
 
 def wiki_settings(request):
@@ -101,10 +110,13 @@ def wiki_settings(request):
 @requires_project_admin
 @allow_http("POST")
 def create_wiki(request):
-    name = request.POST.get('name') or "default-wiki"
+    _name = request.POST.get('name') or "default-wiki"
     from django.template.defaultfilters import slugify
-    name = slugify(name)
+    name = slugify(_name)
     name = request.META['HTTP_X_OPENPLANS_PROJECT'] + '/' + name
+    if Wiki.objects.filter(name=name).exists():
+        raise ValidationError({'name': "A wiki named %s already exists, please choose another name" % _name})
+
     site = Wiki(name=name)
     site.save()
 

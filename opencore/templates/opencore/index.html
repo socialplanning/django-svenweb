@@ -14,6 +14,10 @@
   .create-wiki-form h2 {
     padding-bottom: 15px;
   }
+  .error {
+    font-weight: bold;
+    color: red;
+  }
 </style>
 {% endblock %}
 
@@ -38,7 +42,12 @@ No wikis have been created yet.
   <form enctype="multipart/form-data" method="POST">
   {% csrf_token %}
   <p>
-    Name: <input type="text" name="name" />
+    <label for="name">
+      Name: <input id="name" type="text" name="name" value="default-wiki" />
+      {% if errors.name %}
+      <span class="error">{{ errors.name }}</span>
+      {% endif %}
+    </label>
   </p>
 
   {% include "opencore/permissions_form.html" %}
